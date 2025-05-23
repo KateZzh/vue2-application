@@ -1,0 +1,50 @@
+:root {
+  --main-color: #0f4c82;
+  --text-color: #000;
+  --white-color: #fff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#app {
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text-color);
+  background-color: var(--white-color);
+}
+
+.v-text-field.v-text-field--solo:not(.v-text-field--solo-flat) > .v-input__control > .v-input__slot {
+  box-shadow: inset 0 2px 5px 0 #cdcdcd !important;
+  min-height: 10px;
+  margin: 8px 0 15px;
+}
+
+.theme--light.v-label {
+  color: var(--text-color) !important;
+  font-size: 12px;
+  font-weight: 300;
+}
+
+.theme--light.v-data-table {
+  padding: 0 20px;
+}
+
+.theme--light.v-data-table > .v-data-table__wrapper > table > thead > tr > th {
+  color: var(--text-color) !important;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.v-data-table__wrapper {
+  height: calc(100vh - 215px);
+  overflow-y: auto !important;
+}
+
+.theme--light.v-data-table > .v-data-table__wrapper > table > tbody > tr > td {
+  border-bottom: thin solid rgba(0, 0, 0, 0.12);
+}
