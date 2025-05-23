@@ -71,7 +71,7 @@
               <v-form ref="form">
                 <v-container>
                   <v-row>
-                    <v-col cols="12" class="pa-0" v-for="(field, index) in fields" :key="index">
+                    <v-col cols="12" class="pa-0 ma-0" v-for="(field, index) in fields" :key="index">
                       <v-label :for="field.key">{{ field.text }}</v-label>
                       <v-text-field :id="field.key" v-model="editedItem[field.key]" solo></v-text-field>
                     </v-col>
