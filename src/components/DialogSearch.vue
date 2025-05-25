@@ -31,29 +31,22 @@
 
 <script>
 import { mapActions } from 'vuex';
+import { profileFields } from '@/constants';
 
 export default {
   data: () => ({
     dialog: false,
-    fields: [
-      { text: 'Имя', key: 'firstName', value: '' },
-      { text: 'Фамилия', key: 'lastName', value: '' },
-      { text: 'Компания', key: 'company', value: '' },
-      { text: 'Специальность', key: 'job', value: '' },
-      { text: 'Телефон', key: 'phone', value: '' },
-      { text: 'Е-mail', key: 'email', value: '' },
-      { text: 'Интересы', key: 'interests', value: '' },
-    ],
+    fields: profileFields.map(field => ({
+      text: field.text,
+      key: field.key,
+      value: '',
+    })),
   }),
   methods: {
     ...mapActions(['fetchProfiles', 'filterProfiles']),
     loadSearchParamsFromUrl() {
       this.fields.forEach(field => {
-        const queryValue = this.$route.query[field.key];
-
-        if (queryValue) {
-          field.value = queryValue || '';
-        }
+        field.value = this.$route.query[field.key] || '';
       });
     },
     async applySearchParams() {
@@ -85,8 +78,6 @@ export default {
       if (!this.isSameSearchQuery(this.$route.query, clearedQuerySearch)) {
         this.$router.push({ query: clearedQuerySearch });
       }
-
-      await this.fetchProfiles({ querySearch: clearedQuerySearch });
     },
     isSameSearchQuery(currentQuery, addQuery) {
       const isSameObjectsLength = Object.keys(addQuery).length === Object.keys(currentQuery).length;

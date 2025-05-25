@@ -14,7 +14,7 @@
   >
     <template v-slot:top>
       <v-toolbar flat>
-        <v-toolbar-title class="font-h6">{{ showCurrentStatusTitle }}</v-toolbar-title>
+        <v-toolbar-title class="font-h6">{{ currentStatusTitle }}</v-toolbar-title>
         <v-btn icon class="ml-2" @click="handleRefreshData">
           <v-icon color="primary">mdi-refresh</v-icon>
         </v-btn>
@@ -34,14 +34,14 @@
           </template>
 
           <v-list>
-            <v-list-item v-for="(item, index) in dropdownItems" :key="index" link @click="item.click">
+            <v-list-item v-for="(item, index) in dropdownItems" :key="index" link @click="item.handler">
               <v-list-item-title class="body-2">{{ item.title }}</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
 
         <v-dialog
-          v-if="action === actionProfile.DELETE"
+          v-if="action === profileActions.DELETE"
           v-model="isOpenedDialog"
           persistent
           max-width="550px"
@@ -58,7 +58,7 @@
         </v-dialog>
 
         <v-dialog
-          v-if="action !== actionProfile.DELETE"
+          v-if="action !== profileActions.DELETE"
           v-model="isOpenedDialog"
           persistent
           max-width="434px"
@@ -71,7 +71,7 @@
               <v-form ref="form">
                 <v-container>
                   <v-row>
-                    <v-col cols="12" class="pa-0 ma-0" v-for="(field, index) in fields" :key="index">
+                    <v-col cols="12" class="pa-0 ma-0" v-for="(field, index) in profileFields" :key="index">
                       <v-label :for="field.key">{{ field.text }}</v-label>
                       <v-text-field :id="field.key" v-model="editedItem[field.key]" solo></v-text-field>
                     </v-col>
@@ -96,13 +96,13 @@
       }}</v-icon>
     </template>
     <template v-slot:[`item.action`]="{ item }">
-      <v-icon color="primary" size="20" v-if="action === actionProfile.EDIT" @click="handleEditItem(item)">
+      <v-icon color="primary" size="20" v-if="action === profileActions.EDIT" @click="handleOpenDialog(item)">
         mdi-pencil
       </v-icon>
       <v-icon
         color="primary"
         size="20"
-        v-else-if="action === actionProfile.DELETE"
+        v-else-if="action === profileActions.DELETE"
         @click="handleOpenDialog(item)"
       >
         mdi-delete
@@ -113,56 +113,19 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex';
-import { actionsProfile } from '@/constants';
+import { profileActions, profileFields, profileStatusItems, defaultProfileItem } from '@/constants';
 
 export default {
   data: () => ({
     options: {},
-    dropdownItems: [],
     isOpenedActionMenu: false,
     isOpenedDialog: false,
     isActionIconVisible: false,
-    action: actionsProfile.ADD,
-    statusItems: [
-      { title: 'Все', value: '' },
-      { title: 'Обработанные', value: 'Basic Plan' },
-      { title: 'Необработанные', value: 'Trial' },
-    ],
-    fields: [
-      { text: 'Имя', key: 'firstName', value: '' },
-      { text: 'Фамилия', key: 'lastName', value: '' },
-      { text: 'Компания', key: 'company', value: '' },
-      { text: 'Специальность', key: 'job', value: '' },
-      { text: 'Телефон', key: 'phone', value: '' },
-      { text: 'Е-mail', key: 'email', value: '' },
-      { text: 'Интересы', key: 'interests', value: '' },
-    ],
-    editedItem: {
-      firstName: '',
-      lastName: '',
-      company: '',
-      job: '',
-      phone: '',
-      email: '',
-      interests: '',
-    },
-    defaultItem: {
-      firstName: '',
-      lastName: '',
-      company: '',
-      job: '',
-      phone: '',
-      email: '',
-      interests: '',
-    },
+    action: profileActions.ADD,
+    editedItem: { ...defaultProfileItem },
+    profileFields,
+    profileActions,
   }),
-  created() {
-    this.dropdownItems = [
-      { title: 'Добавить', click: this.handleActionAdd },
-      { title: 'Изменить', click: this.handleActionEdit },
-      { title: 'Удалить', click: this.handleActionDelete },
-    ];
-  },
   computed: {
     ...mapGetters({
       profiles: 'getProfiles',
@@ -171,104 +134,103 @@ export default {
       isLoading: 'getIsLoading',
       filterByStatus: 'getFilterByStatus',
     }),
-    headers() {
-      const baseHeaders = [
-        { text: 'Имя', value: 'firstName', sortable: false },
-        { text: 'Фамилия', value: 'lastName', sortable: false },
-        { text: 'Компания', value: 'company', sortable: false },
-        { text: 'Специальность', value: 'job', sortable: false },
-        { text: 'Телефон', value: 'phone', sortable: false },
-        { text: 'Е-mail', value: 'email', sortable: false },
-        { text: 'Интересы', value: 'interests', sortable: false },
+    dropdownItems() {
+      return [
+        { title: 'Добавить', handler: this.handleActionAdd },
+        { title: 'Изменить', handler: this.handleActionEdit },
+        { title: 'Удалить', handler: this.handleActionDelete },
       ];
+    },
+    headers() {
+      const baseHeaders = profileFields.map(field => ({
+        text: field.text,
+        value: field.key,
+        sortable: false,
+      }));
 
-      let headers = [];
-      if (!this.filterByStatus) {
-        headers = [{ text: 'Статус', value: 'plan', sortable: false }, ...baseHeaders];
-      } else {
-        headers = [...baseHeaders];
-      }
+      let headers = this.filterByStatus
+        ? [...baseHeaders]
+        : [{ text: 'Статус', value: 'plan', sortable: false }, ...baseHeaders];
 
       if (this.isActionIconVisible) {
-        headers = [...headers, { text: 'Действие', value: 'action', sortable: false, align: 'center' }];
+        headers.push({ text: 'Действие', value: 'action', sortable: false, align: 'center' });
       }
 
       return headers;
     },
-    showCurrentStatusTitle() {
-      const currentStatus = this.statusItems.find(el => el.value === this.filterByStatus);
-      return currentStatus ? currentStatus.title : 'Unknown';
-    },
-    actionProfile() {
-      return actionsProfile;
+    currentStatusTitle() {
+      const currentStatus = profileStatusItems.find(el => el.value === this.filterByStatus);
+      return currentStatus?.title || 'Unknown';
     },
     formTitle() {
-      return this.action === this.actionProfile.ADD ? 'Добавить' : 'Изменить';
+      return this.action === profileActions.ADD ? 'Добавить' : 'Изменить';
     },
   },
   methods: {
     ...mapActions(['fetchProfiles', 'deleteProfile', 'updateProfile', 'addProfile']),
-    async handleRefreshData() {
+    async loadProfilesData(resetPage = false) {
       if (Object.keys(this.$route.query).length) {
         this.$router.push({ query: {} });
       }
+
+      if (resetPage) {
+        this.options = { ...this.options, page: 1 };
+      }
+
       await this.fetchProfiles({ ...this.options });
-      this.isActionIconVisible = false;
+    },
+    async handleRefreshData() {
+      await this.loadProfilesData(true);
+      if (this.isActionIconVisible) {
+        this.isActionIconVisible = false;
+      }
     },
     async handleDeleteProfile() {
       this.isOpenedDialog = false;
       await this.deleteProfile(this.editedItem.id);
-      this.handleRefreshData(this.options);
+      this.handleRefreshData();
     },
     async handleEditProfile() {
       this.isOpenedDialog = false;
-      this.isActionIconVisible = false;
 
-      if (this.action === this.actionProfile.ADD) {
+      if (this.action === this.profileActions.ADD) {
         await this.addProfile(this.editedItem);
-        this.handleRefreshData(this.options);
+        this.handleRefreshData();
       } else {
         await this.updateProfile(this.editedItem);
       }
 
-      this.editedItem = { ...this.defaultItem };
+      this.resetForm();
     },
     handleActionDelete() {
       this.isActionIconVisible = true;
-      this.action = actionsProfile.DELETE;
+      this.action = profileActions.DELETE;
     },
     handleActionEdit() {
       this.isActionIconVisible = true;
-      this.action = actionsProfile.EDIT;
+      this.action = profileActions.EDIT;
     },
     handleActionAdd() {
-      this.action = actionsProfile.ADD;
+      this.action = profileActions.ADD;
       this.isOpenedDialog = true;
     },
     handleOpenDialog(item) {
       this.editedItem = { ...item };
       this.isOpenedDialog = true;
     },
-    handleEditItem(item) {
-      this.editedItem = { ...item };
-      this.isOpenedDialog = true;
-    },
     handleDialogCancel() {
       this.isOpenedDialog = false;
-      this.editedItem = { ...this.defaultItem };
-
-      if (this.isActionIconVisible) {
-        this.isActionIconVisible = false;
-      }
+      this.resetForm();
+    },
+    resetForm() {
+      this.editedItem = { ...defaultProfileItem };
+      this.isActionIconVisible = false;
     },
   },
   watch: {
     options: {
       handler() {
-        if (Object.keys(this.$route.query).length) {
-          this.$router.push({ query: {} });
-        }
-        this.fetchProfiles({ ...this.options });
+        this.loadProfilesData();
       },
       deep: true,
     },

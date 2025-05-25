@@ -62,9 +62,7 @@ export default {
     async fetchProfiles({ commit, state }, options) {
       const { page = DEFAULT_PAGE, itemsPerPage = DEFAULT_ITEMS_PER_PAGE, querySearch = {} } = options;
 
-      const filter = !Object.keys(querySearch).length
-        ? { plan: state.filterByStatus }
-        : { plan: '', ...querySearch };
+      const filter = !Object.keys(querySearch).length ? { plan: state.filterByStatus } : { ...querySearch };
 
       const params = {
         _page: page,

@@ -37,14 +37,16 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex';
+import { profileStatusItems, profileStatusValue } from '@/constants';
+
 export default {
   data: () => ({
     panel: [0],
-    statusItems: [
-      { title: 'Все', icon: 'mdi-check-circle', value: '' },
-      { title: 'Обработанные', icon: 'mdi-check-circle', value: 'Basic Plan' },
-      { title: 'Необработанные', icon: 'mdi-information', value: 'Trial' },
-    ],
+    statusItems: profileStatusItems.map(item => ({
+      title: item.title,
+      value: item.value,
+      icon: item.value === profileStatusValue.UNPROCESSED ? 'mdi-information' : 'mdi-check-circle',
+    })),
   }),
   computed: {
     ...mapGetters(['getIsSideBarVisible', 'getFilterByStatus']),
