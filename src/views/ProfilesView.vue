@@ -40,44 +40,20 @@
           </v-list>
         </v-menu>
 
-        <v-dialog v-model="isOpenedDialog" persistent max-width="434px">
-          <v-card>
-            <v-card-title>
-              <span class="text-h5">{{ profileDialogTitle }}</span>
-            </v-card-title>
-            <v-card-text v-if="action === profileActions.DELETE"
-              >Are you sure you want to delete this profile "{{
-                editedItem.firstName + ' ' + editedItem.lastName
-              }}"?</v-card-text
-            >
-            <v-card-text v-else class="px-5 py-0">
-              <v-form ref="form">
-                <v-container>
-                  <v-row>
-                    <v-col cols="12" class="pa-0 ma-0" v-for="(field, index) in profileFields" :key="index">
-                      <v-label :for="field.key">{{ field.text }}</v-label>
-                      <v-text-field :id="field.key" v-model="editedItem[field.key]" solo></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-form>
-            </v-card-text>
-            <v-card-actions class="pb-4">
-              <v-spacer></v-spacer>
-              <v-btn color="blue darken-1" text @click="handleDialogCancel">Отмена</v-btn>
-              <v-btn color="blue darken-1" text @click="handleDialogConfirm">{{
-                action === profileActions.DELETE ? 'OK' : 'Сохранить'
-              }}</v-btn>
-              <v-spacer></v-spacer>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <ProfileDialog
+          :is-open.sync="isOpenDialog"
+          :edited-item.sync="editedItem"
+          :action="action"
+          :profile-fields="profileFields"
+          @cancel="handleDialogCancel"
+          @confirm="handleDialogConfirm"
+        />
       </v-toolbar>
     </template>
 
     <template v-slot:[`item.plan`]="{ item }">
-      <v-icon :color="item.plan !== 'Trial' ? 'primary' : 'error'">{{
-        item.plan !== 'Trial' ? 'mdi-cloud-check-variant' : 'mdi-cloud-alert'
+      <v-icon :color="item.plan === profileStatusValue.UNPROCESSED ? 'error' : 'primary'">{{
+        item.plan === profileStatusValue.UNPROCESSED ? 'mdi-cloud-alert' : 'mdi-cloud-check-variant'
       }}</v-icon>
     </template>
     <template v-slot:[`item.action`]="{ item }">
@@ -98,18 +74,29 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex';
-import { profileActions, profileFields, profileStatusItems, defaultProfileItem } from '@/constants';
+import {
+  profileActions,
+  profileFields,
+  profileStatusItems,
+  defaultProfileItem,
+  profileStatusValue,
+} from '@/constants';
+import ProfileDialog from '@/components/ProfileDialog';
 
 export default {
+  components: {
+    ProfileDialog,
+  },
   data: () => ({
     options: {},
     isOpenedActionMenu: false,
-    isOpenedDialog: false,
+    isOpenDialog: false,
     isActionIconVisible: false,
     action: profileActions.ADD,
     editedItem: { ...defaultProfileItem },
     profileFields,
     profileActions,
+    profileStatusValue,
   }),
   computed: {
     ...mapGetters({
@@ -147,16 +134,6 @@ export default {
       const currentStatus = profileStatusItems.find(el => el.value === this.filterByStatus);
       return currentStatus?.title || 'Unknown';
     },
-    profileDialogTitle() {
-      switch (this.action) {
-        case profileActions.ADD:
-          return 'Добавить';
-        case profileActions.EDIT:
-          return 'Изменить';
-        default:
-          return 'Удалить';
-      }
-    },
   },
   methods: {
     ...mapActions(['fetchProfiles', 'deleteProfile', 'updateProfile', 'addProfile']),
@@ -178,7 +155,7 @@ export default {
       }
     },
     async handleDialogConfirm() {
-      this.isOpenedDialog = false;
+      this.isOpenDialog = false;
 
       if (this.action === profileActions.ADD) {
         await this.addProfile(this.editedItem);
@@ -202,14 +179,14 @@ export default {
     },
     handleActionAdd() {
       this.action = profileActions.ADD;
-      this.isOpenedDialog = true;
+      this.isOpenDialog = true;
     },
     handleOpenDialog(item) {
       this.editedItem = { ...item };
-      this.isOpenedDialog = true;
+      this.isOpenDialog = true;
     },
     handleDialogCancel() {
-      this.isOpenedDialog = false;
+      this.isOpenDialog = false;
       this.resetForm();
     },
     resetForm() {
