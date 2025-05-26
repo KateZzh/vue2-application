@@ -40,34 +40,17 @@
           </v-list>
         </v-menu>
 
-        <v-dialog
-          v-if="action === profileActions.DELETE"
-          v-model="isOpenedDialog"
-          persistent
-          max-width="550px"
-        >
-          <v-card>
-            <v-card-title class="text-h5">Are you sure you want to delete this profile?</v-card-title>
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn color="blue darken-1" text @click="handleDialogCancel">Отмена</v-btn>
-              <v-btn color="blue darken-1" text @click="handleDeleteProfile">OK</v-btn>
-              <v-spacer></v-spacer>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-
-        <v-dialog
-          v-if="action !== profileActions.DELETE"
-          v-model="isOpenedDialog"
-          persistent
-          max-width="434px"
-        >
+        <v-dialog v-model="isOpenedDialog" persistent max-width="434px">
           <v-card>
             <v-card-title>
-              <span class="text-h5">{{ formTitle }}</span>
+              <span class="text-h5">{{ profileDialogTitle }}</span>
             </v-card-title>
-            <v-card-text class="px-5 py-0">
+            <v-card-text v-if="action === profileActions.DELETE"
+              >Are you sure you want to delete this profile "{{
+                editedItem.firstName + ' ' + editedItem.lastName
+              }}"?</v-card-text
+            >
+            <v-card-text v-else class="px-5 py-0">
               <v-form ref="form">
                 <v-container>
                   <v-row>
@@ -79,17 +62,19 @@
                 </v-container>
               </v-form>
             </v-card-text>
-
             <v-card-actions class="pb-4">
               <v-spacer></v-spacer>
               <v-btn color="blue darken-1" text @click="handleDialogCancel">Отмена</v-btn>
-              <v-btn color="blue darken-1" text @click="handleEditProfile">Сохранить</v-btn>
+              <v-btn color="blue darken-1" text @click="handleDialogConfirm">{{
+                action === profileActions.DELETE ? 'OK' : 'Сохранить'
+              }}</v-btn>
               <v-spacer></v-spacer>
             </v-card-actions>
           </v-card>
         </v-dialog>
       </v-toolbar>
     </template>
+
     <template v-slot:[`item.plan`]="{ item }">
       <v-icon :color="item.plan !== 'Trial' ? 'primary' : 'error'">{{
         item.plan !== 'Trial' ? 'mdi-cloud-check-variant' : 'mdi-cloud-alert'
@@ -162,8 +147,15 @@ export default {
       const currentStatus = profileStatusItems.find(el => el.value === this.filterByStatus);
       return currentStatus?.title || 'Unknown';
     },
-    formTitle() {
-      return this.action === profileActions.ADD ? 'Добавить' : 'Изменить';
+    profileDialogTitle() {
+      switch (this.action) {
+        case profileActions.ADD:
+          return 'Добавить';
+        case profileActions.EDIT:
+          return 'Изменить';
+        default:
+          return 'Удалить';
+      }
     },
   },
   methods: {
@@ -185,16 +177,14 @@ export default {
         this.isActionIconVisible = false;
       }
     },
-    async handleDeleteProfile() {
-      this.isOpenedDialog = false;
-      await this.deleteProfile(this.editedItem.id);
-      this.handleRefreshData();
-    },
-    async handleEditProfile() {
+    async handleDialogConfirm() {
       this.isOpenedDialog = false;
 
-      if (this.action === this.profileActions.ADD) {
+      if (this.action === profileActions.ADD) {
         await this.addProfile(this.editedItem);
+        this.handleRefreshData();
+      } else if (this.action === profileActions.DELETE) {
+        await this.deleteProfile(this.editedItem.id);
         this.handleRefreshData();
       } else {
         await this.updateProfile(this.editedItem);
